@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from app.models.issue import Issue
+from app.models.project_member import ProjectMember
 from app.schemas.issue import IssueCreate, IssueUpdate
 from app.repositories.base import BaseRepository
 
@@ -68,6 +69,7 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
     
     def get_filtered(
         self,
+        user_id: Optional[int] = None,
         project_id: Optional[int] = None,
         status: Optional[str] = None,
         priority: Optional[str] = None,
@@ -83,7 +85,10 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
         """
         Get issues with advanced filtering, search, and sorting.
         
+        Only returns issues from projects the user is a member of.
+        
         Args:
+            user_id: Restrict to issues in projects the user belongs to
             project_id: Filter by project
             status: Filter by status
             priority: Filter by priority
@@ -100,6 +105,13 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
             Tuple of (list of issues, total count)
         """
         query = self.db.query(self.model)
+        
+        # Only show issues from projects the user is a member of
+        if user_id is not None:
+            query = query.join(
+                ProjectMember,
+                self.model.project_id == ProjectMember.project_id
+            ).filter(ProjectMember.user_id == user_id)
         
         # Apply filters
         if project_id is not None:

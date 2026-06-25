@@ -70,6 +70,7 @@ def list_issues(
     repo = IssueRepository(db)
     
     issues, total = repo.get_filtered(
+        user_id=current_user.id,
         project_id=project_id,
         status=status,
         priority=priority,
