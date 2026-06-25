@@ -29,7 +29,8 @@ export default function LoginPage() {
       await login(usernameOrEmail, password);
       navigate('/', { state: { successMessage: 'Logged in successfully!' } });
     } catch (err) {
-      setError(extractErrorMessage(err, 'Login failed'));
+      const msg = extractErrorMessage(err, 'Login failed');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -40,8 +41,20 @@ export default function LoginPage() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
         <h1 className="text-2xl font-bold text-center text-indigo-600 mb-6">IssueDesk</h1>
         <h2 className="text-xl font-semibold mb-4">Sign in</h2>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm whitespace-pre-line">{error}</div>}
-        {success && <div className="bg-green-50 text-green-700 border border-green-200 p-3 rounded mb-4 text-sm">{success}</div>}
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-600 text-red-800 p-4 rounded mb-4 flex items-start gap-3 shadow-sm">
+            <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+            <div className="flex-1 whitespace-pre-line text-sm font-medium">{error}</div>
+            <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 text-lg leading-none shrink-0" title="Dismiss">&times;</button>
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-100 border-l-4 border-green-600 text-green-800 p-4 rounded mb-4 flex items-start gap-3 shadow-sm">
+            <span className="text-lg shrink-0 mt-0.5">✓</span>
+            <div className="flex-1 text-sm font-medium">{success}</div>
+            <button onClick={() => setSuccess('')} className="text-green-400 hover:text-green-600 text-lg leading-none shrink-0" title="Dismiss">&times;</button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Username or Email</label>

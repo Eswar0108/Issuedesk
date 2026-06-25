@@ -31,7 +31,13 @@ export default function RegisterPage() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
         <h1 className="text-2xl font-bold text-center text-indigo-600 mb-6">IssueDesk</h1>
         <h2 className="text-xl font-semibold mb-4">Create account</h2>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm whitespace-pre-line">{error}</div>}
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-600 text-red-800 p-4 rounded mb-4 flex items-start gap-3 shadow-sm">
+            <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+            <div className="flex-1 whitespace-pre-line text-sm font-medium">{error}</div>
+            <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 text-lg leading-none shrink-0" title="Dismiss">&times;</button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <input name="full_name" placeholder="Full name" value={form.full_name} onChange={handleChange}
             className="w-full border rounded-md px-3 py-2" />
