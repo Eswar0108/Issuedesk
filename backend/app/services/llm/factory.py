@@ -3,6 +3,7 @@ from app.services.llm.base import BaseLLMProvider
 from app.services.llm.gemini import GeminiProvider
 from app.services.llm.openai_provider import OpenAIProvider
 from app.services.llm.ollama import OllamaProvider
+from app.services.llm.groq import GroqProvider
 
 
 class LLMProviderFactory:
@@ -16,7 +17,7 @@ class LLMProviderFactory:
         Return the corresponding provider instance.
         
         Args:
-            provider_name: The name of the provider (e.g. 'gemini', 'openai', 'ollama')
+            provider_name: The name of the provider (e.g. 'gemini', 'openai', 'ollama', 'groq')
             
         Returns:
             An instance of BaseLLMProvider
@@ -28,8 +29,10 @@ class LLMProviderFactory:
             return OpenAIProvider()
         elif name == "ollama":
             return OllamaProvider()
+        elif name == "groq":
+            return GroqProvider()
         else:
             raise ValueError(
                 f"Unsupported LLM Provider: '{provider_name}'. "
-                f"Currently supported options are: 'gemini', 'openai', 'ollama'."
+                f"Currently supported options are: 'gemini', 'openai', 'ollama', 'groq'."
             )

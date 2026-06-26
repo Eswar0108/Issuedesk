@@ -265,7 +265,20 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
         # Get query embedding
         query_embedding = get_llm_provider().get_embedding(query)
         if not query_embedding:
-            return []
+            # Fallback: Perform standard case-insensitive text search if embeddings are unavailable
+            from sqlalchemy import or_
+            q = self.db.query(self.model)
+            if project_id is not None:
+                q = q.filter(self.model.project_id == project_id)
+            
+            search_term = f"%{query}%"
+            candidates = q.filter(
+                or_(
+                    self.model.title.ilike(search_term),
+                    self.model.description.ilike(search_term),
+                )
+            ).limit(limit).all()
+            return [(issue, 1.0) for issue in candidates]
             
         # Get candidate issues that have embeddings
         q = self.db.query(self.model).filter(self.model.embedding != None)

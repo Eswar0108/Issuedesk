@@ -9,6 +9,7 @@ from app.services.llm.factory import LLMProviderFactory
 from app.services.llm.gemini import GeminiProvider
 from app.services.llm.openai_provider import OpenAIProvider
 from app.services.llm.ollama import OllamaProvider
+from app.services.llm.groq import GroqProvider
 
 
 def get_auth_headers(user_id: int, username: str) -> dict:
@@ -74,6 +75,9 @@ def test_provider_factory():
 
     ollama = LLMProviderFactory.get_provider("ollama")
     assert isinstance(ollama, OllamaProvider)
+
+    groq = LLMProviderFactory.get_provider("groq")
+    assert isinstance(groq, GroqProvider)
 
     with pytest.raises(ValueError):
         LLMProviderFactory.get_provider("unsupported_provider")

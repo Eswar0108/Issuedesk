@@ -18,5 +18,5 @@ COPY . .
 # Set default port to 8008 (which FastAPI binds to locally, but cloud services override)
 EXPOSE 8008
 
-# Start the application using Uvicorn, binding to the dynamic PORT environment variable provided by cloud hosts
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8008}"]
+# Start the application, running migrations automatically before starting Uvicorn
+CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8008}"]

@@ -1,89 +1,54 @@
 import logging
-import socket
 import json
 from typing import Optional, List, Dict, Any
 from openai import OpenAI
 from fastapi import HTTPException, status
-from app.services.llm.base import BaseLLMProvider
 from app.core.config import settings
+from app.services.llm.base import BaseLLMProvider
 
 logger = logging.getLogger(__name__)
 
 
-class OllamaProvider(BaseLLMProvider):
+class GroqProvider(BaseLLMProvider):
     """
-    Ollama implementation of the LLM Provider interface.
-    Runs completely offline and free on localhost:11434.
-    
-    Default models:
-    - Text: 'llama3.1:8b' (configurable via OLLAMA_MODEL)
-    - Embeddings: 'nomic-embed-text' (configurable via OLLAMA_EMBED_MODEL)
+    Groq implementation of the LLM Provider interface.
+    Uses official openai Python package pointing to Groq's API gateway.
     """
 
     def __init__(self):
         self._client = None
-        self.model_name = settings.OLLAMA_MODEL
-        self.embed_model_name = settings.OLLAMA_EMBED_MODEL
+        self.model_name = settings.GROQ_MODEL
 
     @property
     def client(self) -> OpenAI:
-        """Get the OpenAI client configured for Ollama instance."""
+        """Lazy-loaded OpenAI client instance pointing to Groq API."""
         if self._client is None:
             self._ensure_configured()
             self._client = OpenAI(
-                base_url=settings.OLLAMA_BASE_URL,
-                api_key="ollama"  # dummy key required by SDK
+                api_key=settings.GROQ_API_KEY,
+                base_url="https://api.groq.com/openai/v1"
             )
         return self._client
 
     def is_configured(self) -> bool:
-        """Check if Ollama server is running by attempting to connect to the configured base URL."""
-        try:
-            from urllib.parse import urlparse
-            import urllib.request
-            
-            # Extract the base address (e.g., http://localhost:11434)
-            parsed = urlparse(settings.OLLAMA_BASE_URL)
-            base_addr = f"{parsed.scheme}://{parsed.netloc}"
-            
-            # Send a quick request to check if it responds (accepting standard HTTP statuses)
-            req = urllib.request.Request(base_addr, method="GET")
-            with urllib.request.urlopen(req, timeout=1.0) as response:
-                return response.status in (200, 404, 403)
-        except Exception:
-            return False
+        return bool(settings.GROQ_API_KEY)
 
     def _ensure_configured(self):
         if not self.is_configured():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
-                    f"Ollama server is not responding at {settings.OLLAMA_BASE_URL}. "
-                    "To use offline free models:\n"
-                    "1. Make sure Ollama app is running locally.\n"
-                    "2. If deployed to the web, make sure you are exposing Ollama "
-                    "using a public tunnel (like Ngrok) and have set OLLAMA_BASE_URL in the variables."
+                    "Groq API key is not configured. "
+                    "Please set GROQ_API_KEY in your backend/.env file to use the Groq provider."
                 ),
             )
 
     def get_embedding(self, text: str) -> Optional[List[float]]:
-        if not self.is_configured() or not text:
-            return None
-
-        try:
-            truncated_text = text[:10000]
-            response = self.client.embeddings.create(
-                input=[truncated_text],
-                model=self.embed_model_name
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            logger.error(f"Ollama embedding generation failed: {str(e)}")
-            # If the user has Ollama running but lacks the embedding model, try pulling it or warn
-            logger.warning(
-                f"Make sure you have downloaded the embedding model by running: 'ollama pull {self.embed_model_name}'"
-            )
-            return None
+        """
+        Groq does not natively support embeddings.
+        Returns None to trigger the database keyword-search fallback.
+        """
+        return None
 
     def generate_chat_response(
         self, prompt: str, context: str, history: Optional[List[Dict[str, str]]] = None
@@ -130,13 +95,10 @@ class OllamaProvider(BaseLLMProvider):
             )
             return response.choices[0].message.content or ""
         except Exception as e:
-            logger.error(f"Ollama generate_chat_response failed: {str(e)}")
+            logger.error(f"Groq generate_chat_response failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    f"Ollama model error: {str(e)}. "
-                    f"Please make sure you have pulled the model by running: 'ollama pull {self.model_name}'"
-                ),
+                detail=f"Groq API model error: {str(e)}",
             )
 
     def enhance_description(self, title: str, description: str) -> Dict[str, Any]:
@@ -165,17 +127,16 @@ class OllamaProvider(BaseLLMProvider):
             )
             
             content = response.choices[0].message.content or "{}"
-            # Clean content in case Ollama wraps it in ```json ... ```
             content_cleaned = content.strip()
             if content_cleaned.startswith("```"):
                 content_cleaned = content_cleaned.replace("```json", "").replace("```", "").strip()
                 
             return json.loads(content_cleaned)
         except Exception as e:
-            logger.error(f"Ollama enhance_description failed: {str(e)}")
+            logger.error(f"Groq enhance_description failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to auto-enhance description using local Ollama: {str(e)}",
+                detail=f"Failed to auto-enhance description using Groq: {str(e)}",
             )
 
     def suggest_assignee(
@@ -212,15 +173,14 @@ class OllamaProvider(BaseLLMProvider):
             )
 
             content = response.choices[0].message.content or "{}"
-            # Clean content in case Ollama wraps it in ```json ... ```
             content_cleaned = content.strip()
             if content_cleaned.startswith("```"):
                 content_cleaned = content_cleaned.replace("```json", "").replace("```", "").strip()
 
             return json.loads(content_cleaned)
         except Exception as e:
-            logger.error(f"Ollama suggest_assignee failed: {str(e)}")
+            logger.error(f"Groq suggest_assignee failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get assignee suggestion using local Ollama: {str(e)}",
+                detail=f"Failed to get assignee suggestion using Groq: {str(e)}",
             )

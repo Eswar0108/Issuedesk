@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     Required if LLM_PROVIDER is set to 'openai'.
     """
 
+    # ── Groq API ──────────────────────────────────────────────
+    GROQ_API_KEY: Optional[str] = None
+    """
+    API key for Groq model inference.
+    Required if LLM_PROVIDER is set to 'groq'.
+    """
+
+    GROQ_MODEL: str = "llama-3.1-8b-instant"
+    """Model name for Groq chat/generation."""
+
     # ── LLM Settings ──────────────────────────────────────────
     LLM_PROVIDER: str = "gemini"
     """
@@ -56,6 +66,9 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: Optional[str] = None
     """Comma-separated list of additional origins allowed for CORS in production."""
+
+    OLLAMA_BASE_URL: str = "http://localhost:11434/v1"
+    """Base URL for Ollama API endpoint."""
 
     OLLAMA_MODEL: str = "llama3.1:8b"
     """Model name for Ollama chat/generation."""
