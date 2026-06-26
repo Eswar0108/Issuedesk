@@ -42,6 +42,12 @@ export default function ProjectsListPage() {
                 <span>{p.member_count} members</span>
                 <span>{p.issue_count} issues</span>
               </div>
+              {(p.start_date || p.end_date) && (
+                <div className="flex text-xs text-gray-500 mt-1 space-x-3">
+                  {p.start_date && <span>Start: {new Date(p.start_date).toLocaleDateString()}</span>}
+                  {p.end_date && <span>End: {new Date(p.end_date).toLocaleDateString()}</span>}
+                </div>
+              )}
             </Link>
           ))}
         </div>

@@ -250,3 +250,36 @@ def remove_member(
         )
     
     return MessageResponse(message="Member removed successfully")
+
+
+
+@router.patch(
+        "/projects/{project_id}",
+        response_model=MessageResponse,
+        status_code=201,
+        summary="Update project status")
+
+def update_project_status(
+    project_id: int,
+    update_data: ProjectUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+    
+    """
+    Update the contents of a project.
+    """
+
+    project_repo =  ProjectRepository(db)
+    user_repo = UserRepository(db)
+
+    project = project_repo.get(project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    updated = project.update(project, update_data)
+    response = ProjectResponse.model_validate(updated)
+    response.member_count = project.get_member_count(project.id)
+    response.issue_count = project.get_issue_count(project.id)
+    return response

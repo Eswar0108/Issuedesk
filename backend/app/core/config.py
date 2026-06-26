@@ -5,6 +5,7 @@ Loads and validates environment variables using Pydantic Settings.
 This is the single source of truth for all configuration values.
 """
 
+from typing import Optional
 from pydantic_settings import BaseSettings
 
 
@@ -28,6 +29,39 @@ class Settings(BaseSettings):
     PostgreSQL connection string.
     Format: postgresql://user:password@host:port/database
     """
+
+    # ── Gemini API ────────────────────────────────────────────
+    GEMINI_API_KEY: Optional[str] = None
+    """
+    API key for Google Gemini model inference.
+    Can be obtained for free from Google AI Studio.
+    """
+
+    # ── OpenAI API ────────────────────────────────────────────
+    OPENAI_API_KEY: Optional[str] = None
+    """
+    API key for OpenAI model inference.
+    Required if LLM_PROVIDER is set to 'openai'.
+    """
+
+    # ── LLM Settings ──────────────────────────────────────────
+    LLM_PROVIDER: str = "gemini"
+    """
+    Active LLM provider.
+    Supported values: 'gemini', 'openai', 'ollama'
+    """
+
+    AI_NAME: str = "IssueDesk AI"
+    """The custom name of the AI assistant."""
+
+    CORS_ORIGINS: Optional[str] = None
+    """Comma-separated list of additional origins allowed for CORS in production."""
+
+    OLLAMA_MODEL: str = "llama3.1:8b"
+    """Model name for Ollama chat/generation."""
+
+    OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
+    """Model name for Ollama embeddings."""
     
     # ── Security ──────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production"

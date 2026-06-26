@@ -68,3 +68,62 @@ def test_add_comment_success(client):
     data = response.json()
     assert data["content"] == "This is a comment."
     assert data["author_username"] == "commenter"
+
+def test_create_issue_date_validation(client):
+    # 1. Register & login
+    client.post("/api/v1/auth/register", json={
+        "username": "dateowner", "email": "dateowner@example.com",
+        "password": "Password123!"
+    })
+    login_response = client.post("/api/v1/auth/login", json={
+        "username_or_email": "dateowner", "password": "Password123!"
+    })
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # 2. Create project with start_date set to 2026-07-01
+    proj_response = client.post("/api/v1/projects", json={
+        "name": "Date Project", 
+        "key": "DATEPROJ",
+        "start_date": "2026-07-01"
+    }, headers=headers)
+    assert proj_response.status_code == 201
+    project_id = proj_response.json()["id"]
+    
+    # 3. Create issue with start_date BEFORE project start date (should fail)
+    bad_issue_payload = {
+        "title": "Invalid Start Date",
+        "project_id": project_id,
+        "start_date": "2026-06-30"
+    }
+    response = client.post("/api/v1/issues", json=bad_issue_payload, headers=headers)
+    assert response.status_code == 400
+    assert "cannot be before project start date" in response.json()["detail"]
+    
+    # 4. Create issue with start_date AFTER project start date (should succeed)
+    good_issue_payload = {
+        "title": "Valid Start Date",
+        "project_id": project_id,
+        "start_date": "2026-07-02"
+    }
+    response = client.post("/api/v1/issues", json=good_issue_payload, headers=headers)
+    assert response.status_code == 201
+    data = response.json()
+    issue_id = data["id"]
+    assert data["start_date"] == "2026-07-02"
+    
+    # 5. Update issue with start_date BEFORE project start date (should fail)
+    update_payload = {
+        "start_date": "2026-06-25"
+    }
+    response = client.patch(f"/api/v1/issues/{issue_id}", json=update_payload, headers=headers)
+    assert response.status_code == 400
+    assert "cannot be before project start date" in response.json()["detail"]
+    
+    # 6. Update issue with start_date AFTER project start date (should succeed)
+    update_payload = {
+        "start_date": "2026-07-05"
+    }
+    response = client.patch(f"/api/v1/issues/{issue_id}", json=update_payload, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["start_date"] == "2026-07-05"

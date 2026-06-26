@@ -5,8 +5,9 @@ Represents a project that contains issues.
 Projects help organize issues into logical groups (e.g., "BugDesk", "Mobile App").
 """
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship
+from datetime import date
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
@@ -59,6 +60,11 @@ class Project(TimestampMixin, Base):
     
     is_active = Column(Boolean, default=True, nullable=False)
     """Soft-delete / archive flag."""
+
+    start_date = Column(Date, nullable=True)
+    """Optional start date for the project timeline."""
+    end_date = Column(Date, nullable=True)
+    """Project end date."""
     
     
     # ── Relationships ────────────────────────────────────────

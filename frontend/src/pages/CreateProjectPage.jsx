@@ -6,7 +6,7 @@ import { extractErrorMessage } from '../utils/errors';
 
 export default function CreateProjectPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', key: '', description: '' });
+  const [form, setForm] = useState({ name: '', key: '', description: '', start_date: '', end_date: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +43,16 @@ export default function CreateProjectPage() {
             <input name="key" value={form.key} onChange={handleKeyChange} required placeholder="e.g., PROJ"
               className="mt-1 w-full border rounded-md px-3 py-2 font-mono uppercase" />
             <p className="text-xs text-gray-500 mt-1">Used as prefix for issue IDs (e.g., PROJ-1001)</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <input name="start_date" type="date" value={form.start_date} onChange={handleChange}
+              className="mt-1 w-full border rounded-md px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <input name="end_date" type="date" value={form.end_date} onChange={handleChange}
+              className="mt-1 w-full border rounded-md px-3 py-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Description</label>

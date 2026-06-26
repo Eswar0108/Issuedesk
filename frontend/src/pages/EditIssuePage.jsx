@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { issueService } from '../api/issues';
 import { projectService } from '../api/projects';
 import { aiService } from '../api/ai';
 import { extractErrorMessage } from '../utils/errors';
 
-export default function CreateIssuePage() {
+export default function EditIssuePage() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({
@@ -17,15 +18,11 @@ export default function CreateIssuePage() {
     issue_type: 'bug',
     project_id: searchParams.get('project') || '',
     issue_code: '',
-    start_date: new Date().toISOString().split('T')[0],
+    start_date: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
-
-  useEffect(() => {
-    projectService.getAll().then(setProjects).catch(console.error);
-  }, []);
 
   const handleEnhance = async () => {
     if (!form.title) {
@@ -50,6 +47,27 @@ export default function CreateIssuePage() {
     }
   };
 
+  useEffect(() => {
+    if (id) {
+      issueService.getById(id).then((issue) => {
+        setForm({
+          title: issue.title || '',
+          description: issue.description || '',
+          priority: issue.priority || 'medium',
+          issue_type: issue.issue_type || 'bug',
+          project_id: issue.project_id || '',
+          issue_code: issue.issue_code || '',
+          start_date: issue.start_date ? issue.start_date.split('T')[0] : '',
+        });
+      }).catch(console.error);
+    }
+  }, [id]);
+
+
+  useEffect(() => {
+    projectService.getAll().then(setProjects).catch(console.error);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.project_id) { setError('Please select a project'); return; }
@@ -64,13 +82,13 @@ export default function CreateIssuePage() {
     setError('');
     setLoading(true);
     try {
-      const issue = await issueService.create({
+      await issueService.update(id, {
         ...form,
         project_id: parseInt(form.project_id),
       });
-      navigate(`/issues/${issue.id}`, { state: { successMessage: 'Issue created successfully!' } });
+      navigate(`/issues/${id}`, { state: { successMessage: 'Issue updated successfully!' } });
     } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to create issue'));
+      setError(extractErrorMessage(err, 'Failed to update issue'));
     } finally {
       setLoading(false);
     }
@@ -78,7 +96,7 @@ export default function CreateIssuePage() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-6">Create Issue</h1>
+      <h1 className="text-2xl font-bold mb-6">Edit Issue</h1>
       <div className="max-w-2xl bg-white rounded-lg shadow p-6">
         {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm whitespace-pre-line">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -156,7 +174,7 @@ export default function CreateIssuePage() {
           </div>
           <button type="submit" disabled={loading}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50">
-            {loading ? 'Creating...' : 'Create Issue'}
+            {loading ? 'Saving...' : 'Save Changes'}
           </button>
         </form>
       </div>

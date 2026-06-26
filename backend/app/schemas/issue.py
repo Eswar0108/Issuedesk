@@ -5,7 +5,7 @@ Pydantic models for issue-related API operations.
 Issues are the core entity - bugs, features, tasks tracked in projects.
 """
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -26,6 +26,12 @@ class IssueBase(BaseModel):
         description="Short descriptive title of the issue"
     )
     
+    issue_code: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Unique code for the issue"
+    )
+    
     description: Optional[str] = Field(
         None,
         description="Detailed explanation. For bugs, include steps to reproduce."
@@ -39,6 +45,11 @@ class IssueBase(BaseModel):
     issue_type: IssueType = Field(
         default=IssueType.BUG,
         description="Type: bug, feature, task, or improvement"
+    )
+
+    start_date: Optional[date] = Field(
+        None,
+        description="Start Date of the issue"
     )
 
 
@@ -75,6 +86,12 @@ class IssueUpdate(BaseModel):
         max_length=200,
         description="New title"
     )
+
+    issue_code: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="New issue code"
+    )
     
     description: Optional[str] = Field(
         None,
@@ -99,6 +116,11 @@ class IssueUpdate(BaseModel):
     assignee_id: Optional[int] = Field(
         None,
         description="New assignee user ID (set to null to unassign)"
+    )
+    
+    start_date: Optional[date] = Field(
+        None,
+        description="New start date of the issue"
     )
 
 
@@ -126,6 +148,8 @@ class IssueResponse(IssueBase):
     
     status: IssueStatus
     project_id: int
+    
+    issue_code: Optional[str] = None
     
     reporter_id: Optional[int] = None
     assignee_id: Optional[int] = None
@@ -172,6 +196,7 @@ class IssueListItem(BaseModel):
     reporter_username: Optional[str] = None
     assignee_username: Optional[str] = None
     comment_count: int = 0
+    start_date: Optional[date] = None
     created_at: datetime
     updated_at: datetime
     

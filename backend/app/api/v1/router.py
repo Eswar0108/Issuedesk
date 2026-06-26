@@ -17,13 +17,15 @@ api_router = APIRouter(prefix="/api/v1")
 
 def register_routers():
     """Import and register all endpoint routers."""
-    from app.api.v1.endpoints import auth, users, projects, issues, comments
+    from app.api.v1.endpoints import auth, users, projects, issues, comments, attachments, ai
     
     api_router.include_router(auth.router)
     api_router.include_router(users.router)
     api_router.include_router(projects.router)
     api_router.include_router(issues.router)
     api_router.include_router(comments.router)
+    api_router.include_router(attachments.router)
+    api_router.include_router(ai.router)
 
 
 # Register all routers when this module is imported

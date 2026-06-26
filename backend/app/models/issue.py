@@ -5,8 +5,9 @@ Represents a bug, feature request, task, or improvement in a project.
 This is the core entity of the IssueDesk application.
 """
 
-from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey, Date, JSON
 from sqlalchemy.orm import relationship
+from datetime import date
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
@@ -41,9 +42,20 @@ class Issue(TimestampMixin, Base):
         index=True
     )
     """Short, descriptive title of the issue."""
+
+    issue_code = Column(
+        String(50),
+        nullable=True,
+        index=True,
+        unique=True
+    )
+    """Unique code for the issue."""
     
     description = Column(Text, nullable=True)
     """Detailed explanation of the issue including steps to reproduce if a bug."""
+    
+    embedding = Column(JSON, nullable=True)
+    """JSON representation of the 768-dimensional text embedding vector."""
     
     status = Column(
         Enum(IssueStatus),
@@ -78,6 +90,9 @@ class Issue(TimestampMixin, Base):
     Values: bug, feature, task, improvement
     """
     
+    start_date = Column(Date, default=date.today, nullable=True)
+    """Start Date of the issue."""
+
     project_id = Column(
         Integer,
         ForeignKey("projects.id", ondelete="CASCADE"),
@@ -126,6 +141,14 @@ class Issue(TimestampMixin, Base):
         order_by="Comment.created_at"
     )
     """All comments on this issue, ordered by creation time."""
+
+    attachments = relationship(
+        "Attachment",
+        primaryjoin="and_(Attachment.entity_id == Issue.id, Attachment.entity_type == 'issue')",
+        foreign_keys="[Attachment.entity_id]",
+        cascade="all, delete-orphan",
+        order_by="Attachment.created_at"
+    )
     
     def __repr__(self):
         """String representation for debugging."""

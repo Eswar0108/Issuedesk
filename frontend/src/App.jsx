@@ -10,6 +10,9 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 import IssuesListPage from './pages/IssuesListPage';
 import CreateIssuePage from './pages/CreateIssuePage';
 import IssueDetailPage from './pages/IssueDetailPage';
+import EditProjectPage from './pages/EditProjectPage';
+import EditIssuePage from './pages/EditIssuePage';
+import AIChatPage from './pages/AIChatPage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -36,9 +39,12 @@ export default function App() {
           <Route path="/projects" element={<ProtectedRoute><ProjectsListPage /></ProtectedRoute>} />
           <Route path="/projects/new" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
+          <Route path="/projects/:id/edit" element={<ProtectedRoute><EditProjectPage /></ProtectedRoute>} />
           <Route path="/issues" element={<ProtectedRoute><IssuesListPage /></ProtectedRoute>} />
           <Route path="/issues/new" element={<ProtectedRoute><CreateIssuePage /></ProtectedRoute>} />
           <Route path="/issues/:id" element={<ProtectedRoute><IssueDetailPage /></ProtectedRoute>} />
+          <Route path="/edit-issue/:id" element={<ProtectedRoute><EditIssuePage /></ProtectedRoute>} />
+          <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

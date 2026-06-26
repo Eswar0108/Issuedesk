@@ -3,6 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { issueService } from '../api/issues';
 import { userService } from '../api/users';
+import { projectService } from '../api/projects';
+import { aiService } from '../api/ai';
+import { extractErrorMessage } from '../utils/errors';
 
 const STATUS_COLORS = {
   open: 'bg-green-100 text-green-700',
@@ -24,12 +27,15 @@ export default function IssuesListPage() {
   const [searchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [useSemantic, setUseSemantic] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [filters, setFilters] = useState({
-    project_id: searchParams.get('project_id') || '',
+    project_id: searchParams.get('project') || searchParams.get('project_id') || '',
     status: '',
     priority: '',
     assignee_id: '',
@@ -42,31 +48,55 @@ export default function IssuesListPage() {
     userService.getAll()
       .then((data) => setUsers(data.items || []))
       .catch(console.error);
+      
+    projectService.getAll()
+      .then(setProjects)
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const params = {
-      page: currentPage,
-      page_size: 10,
-      sort_by: filters.sort_by,
-      sort_desc: filters.sort_desc,
-    };
-    if (filters.project_id) params.project_id = filters.project_id;
-    if (filters.status) params.status = filters.status;
-    if (filters.priority) params.priority = filters.priority;
-    if (filters.assignee_id) params.assignee_id = filters.assignee_id;
-    if (filters.search) params.search = filters.search;
+    if (useSemantic && filters.search && filters.project_id) {
+      setLoading(true);
+      setAiError('');
+      aiService.semanticSearch(parseInt(filters.project_id), filters.search, 15)
+        .then((data) => {
+          setIssues(data || []);
+          setTotal(data.length || 0);
+          setTotalPages(1);
+        })
+        .catch((err) => {
+          const errMsg = extractErrorMessage(err, 'AI search failed');
+          setAiError(errMsg);
+          setIssues([]);
+          setTotal(0);
+          setTotalPages(1);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setAiError('');
+      setLoading(true);
+      const params = {
+        page: currentPage,
+        page_size: 10,
+        sort_by: filters.sort_by,
+        sort_desc: filters.sort_desc,
+      };
+      if (filters.project_id) params.project_id = filters.project_id;
+      if (filters.status) params.status = filters.status;
+      if (filters.priority) params.priority = filters.priority;
+      if (filters.assignee_id) params.assignee_id = filters.assignee_id;
+      if (filters.search) params.search = filters.search;
 
-    issueService.getAll(params)
-      .then((data) => {
-        setIssues(data.items || []);
-        setTotal(data.total || 0);
-        setTotalPages(data.total_pages || 1);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [filters, currentPage]);
+      issueService.getAll(params)
+        .then((data) => {
+          setIssues(data.items || []);
+          setTotal(data.total || 0);
+          setTotalPages(data.total_pages || 1);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
+  }, [filters, currentPage, useSemantic]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -105,6 +135,24 @@ export default function IssuesListPage() {
         <input placeholder="Search..." value={filters.search}
           onChange={(e) => handleFilterChange('search', e.target.value)}
           className="border rounded px-3 py-1.5 text-sm flex-1 min-w-[200px]" />
+
+        <select value={filters.project_id} onChange={(e) => handleFilterChange('project_id', e.target.value)}
+          className="border rounded px-3 py-1.5 text-sm">
+          <option value="">All Projects</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>{p.name} ({p.key})</option>
+          ))}
+        </select>
+        
+        <label className="flex items-center gap-2 text-sm font-semibold select-none cursor-pointer bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5 hover:bg-indigo-100/50 transition">
+          <input
+            type="checkbox"
+            checked={useSemantic}
+            onChange={(e) => setUseSemantic(e.target.checked)}
+            className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+          />
+          <span className="text-indigo-700">✨ AI Semantic</span>
+        </label>
         
         <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}
           className="border rounded px-3 py-1.5 text-sm">
@@ -147,6 +195,18 @@ export default function IssuesListPage() {
         </select>
       </div>
 
+      {useSemantic && (!filters.project_id || !filters.search) && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-lg text-xs mb-6 font-medium">
+          💡 <strong>AI Semantic Search Requirements:</strong> Please select a specific project and type a search term above.
+        </div>
+      )}
+
+      {aiError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-lg text-xs mb-6 font-medium">
+          ⚠️ <strong>AI Search Error:</strong> {aiError}
+        </div>
+      )}
+
       {loading ? <div className="text-center py-8">Loading...</div> : issues.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <p className="text-gray-500">No issues found.</p>
@@ -166,8 +226,15 @@ export default function IssuesListPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{issue.title}</span>
-                      {issue.project_key && (
+                      {issue.issue_code ? (
+                        <span className="text-xs text-gray-400 font-mono">{issue.issue_code}</span>
+                      ) : issue.project_key && (
                         <span className="text-xs text-gray-400 font-mono">{issue.project_key}-{issue.id}</span>
+                      )}
+                      {issue.similarity !== undefined && (
+                        <span className="text-xs font-bold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2.5 py-0.5 animate-pulse">
+                          ✨ {Math.round(issue.similarity * 100)}% Match
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
@@ -185,7 +252,7 @@ export default function IssuesListPage() {
                     </div>
                   </div>
                   <span className="text-xs text-gray-400">
-                    {new Date(issue.created_at + (issue.created_at.endsWith('Z') ? '' : 'Z')).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                    {issue.created_at ? new Date(issue.created_at + (issue.created_at.endsWith('Z') ? '' : 'Z')).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}
                   </span>
                 </div>
               </Link>

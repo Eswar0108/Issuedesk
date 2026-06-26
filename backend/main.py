@@ -14,6 +14,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 import logging
 
 from app.core.config import settings
@@ -50,15 +52,31 @@ app = FastAPI(
 # ── CORS Middleware ──────────────────────────────────────────
 # Allows frontend applications to access the API from different origins.
 # In development, this allows your React/Vue frontend to call the API.
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "http://localhost:5177",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:5176",
+    "http://127.0.0.1:5177",
+    "http://127.0.0.1:8000",
+]
+
+if settings.CORS_ORIGINS:
+    extra_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+    cors_origins.extend(extra_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:8000",
-    ],
+    allow_origins=cors_origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,6 +85,13 @@ app.add_middleware(
 
 # ── Register API Routes ─────────────────────────────────────
 app.include_router(api_router)
+
+
+# ── Serve Uploaded Files as Static Assets ───────────────────
+# Files accessible at: GET /uploads/<entity_type>/<entity_id>/<filename>
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
 # ── Request Validation Error Handler ────────────────────────
@@ -102,6 +127,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8008,
         reload=True
     )

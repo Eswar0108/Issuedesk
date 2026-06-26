@@ -37,6 +37,11 @@ export const projectService = {
     return response.data;
   },
 
+  async projectDetailsUpdate(projectId, data) {
+    const response = await apiClient.patch(`/projects/${projectId}`, data);
+    return response.data;
+  },
+
   async removeMember(projectId, userId) {
     const response = await apiClient.delete(`/projects/${projectId}/members/${userId}`);
     return response.data;

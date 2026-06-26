@@ -33,6 +33,7 @@ import app.models.project       # noqa: F401
 import app.models.project_member  # noqa: F401
 import app.models.issue         # noqa: F401
 import app.models.comment       # noqa: F401
+import app.models.attachment    # noqa: F401
 
 target_metadata = Base.metadata
 

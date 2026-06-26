@@ -5,7 +5,7 @@ Pydantic models for project-related API operations.
 Includes schemas for project management and member management.
 """
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator, EmailStr
@@ -53,6 +53,16 @@ class ProjectCreate(ProjectBase):
             raise ValueError("must contain uppercase letters only (A-Z) with no spaces, numbers, or special characters")
         return value
 
+    start_date: Optional[date] = Field(
+        None,
+        description="Optional start date for the project timeline"
+    )
+    
+    end_date: Optional[date] = Field(
+        None,
+        description="Optional end date for the project timeline"
+    )
+
 
 # ── Update Project (PUT/PATCH /projects/{id}) ───────────────
 class ProjectUpdate(BaseModel):
@@ -70,6 +80,16 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = Field(
         None,
         description="New project description"
+    )
+    
+    start_date: Optional[date] = Field(
+        None,
+        description="Optional start date for the project timeline"
+    )
+    
+    end_date: Optional[date] = Field(
+        None,
+        description="Optional end date for the project timeline"
     )
     
 
@@ -123,6 +143,16 @@ class ProjectResponse(ProjectBase):
     issue_count: int = Field(
         default=0,
         description="Number of open issues in this project"
+    )
+    
+    start_date: Optional[date] = Field(
+        None,
+        description="Start date for the project timeline"
+    )
+    
+    end_date: Optional[date] = Field(
+        None,
+        description="End date for the project timeline"
     )
     
     created_at: datetime

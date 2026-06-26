@@ -25,6 +25,9 @@ export default function Layout({ children }) {
               <Link to="/issues" className="text-gray-700 hover:text-indigo-600">
                 Issues
               </Link>
+              <Link to="/ai-chat" className="text-indigo-600 font-semibold hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-md text-sm border border-indigo-100 hover:bg-indigo-100/50 transition">
+                ✨ Ask AI
+              </Link>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">{user?.username}</span>

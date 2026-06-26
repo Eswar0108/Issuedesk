@@ -99,6 +99,10 @@ export default function ProjectDetailPage() {
               className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
               + New Issue
             </Link>
+            <Link to={`/projects/${project.id}/edit`}
+              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700">
+              + Edit Project
+            </Link>
           </div>
         </div>
         <p className="text-gray-600 mb-4">{project.description || 'No description'}</p>
@@ -107,6 +111,12 @@ export default function ProjectDetailPage() {
           <span>{project.member_count} members</span>
           <span>{project.issue_count} open issues</span>
         </div>
+        {(project.start_date || project.end_date) && (
+          <div className="flex text-sm text-gray-500 mt-2 space-x-4">
+            {project.start_date && <span>Start: {new Date(project.start_date).toLocaleDateString()}</span>}
+            {project.end_date && <span>End: {new Date(project.end_date).toLocaleDateString()}</span>}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

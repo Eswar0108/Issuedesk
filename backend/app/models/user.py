@@ -108,6 +108,13 @@ class User(TimestampMixin, Base):
        foreign_keys="ProjectMember.user_id"
    )
     """Project membership records for this user."""
+
+    attachments = relationship(
+        "Attachment",
+        back_populates="uploader",
+        foreign_keys="Attachment.uploader_id"
+    )
+    """Files uploaded by this user."""
     
     def __repr__(self):
         """String representation for debugging."""
