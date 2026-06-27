@@ -5,6 +5,11 @@ import { projectService } from '../api/projects';
 import { useAuth } from '../contexts/useAuth';
 import { extractErrorMessage } from '../utils/errors';
 
+const getInitials = (name) => {
+  if (!name) return 'U';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+};
+
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
@@ -33,8 +38,29 @@ export default function ProjectDetailPage() {
     }
   }, [location]);
 
-  if (loading) return <Layout><div className="text-center py-8">Loading...</div></Layout>;
-  if (!project) return <Layout><div className="text-center py-8 text-red-600">Project not found</div></Layout>;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-medium">Loading project details...</span>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!project) {
+    return (
+      <Layout>
+        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-xs max-w-md mx-auto">
+          <h3 className="text-lg font-bold text-slate-800">Project Not Found</h3>
+          <Link to="/projects" className="mt-4 inline-block text-sm font-bold text-indigo-600 hover:underline">
+            &larr; Back to Projects
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
 
   const isOwnerOrAdmin = user?.id === project.owner_id || user?.role === 'admin';
 
@@ -80,70 +106,111 @@ export default function ProjectDetailPage() {
 
   return (
     <Layout>
-      {success && (
-        <div className="bg-green-50 text-green-700 border border-green-200 p-3 rounded mb-6 text-sm">
-          {success}
-        </div>
-      )}
+      {/* Back button */}
       <div className="mb-6">
-        <Link to="/projects" className="text-indigo-600 hover:underline text-sm">&larr; Back to Projects</Link>
-      </div>
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">{project.name}</h1>
-            <span className="text-sm bg-gray-200 px-2 py-1 rounded font-mono">{project.key}</span>
-          </div>
-          <div className="flex space-x-2">
-            <Link to={`/issues/new?project=${project.id}`}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
-              + New Issue
-            </Link>
-            <Link to={`/projects/${project.id}/edit`}
-              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700">
-              + Edit Project
-            </Link>
-          </div>
-        </div>
-        <p className="text-gray-600 mb-4">{project.description || 'No description'}</p>
-        <div className="flex text-sm text-gray-500 space-x-6">
-          <span>Owner ID: {project.owner_id}</span>
-          <span>{project.member_count} members</span>
-          <span>{project.issue_count} open issues</span>
-        </div>
-        {(project.start_date || project.end_date) && (
-          <div className="flex text-sm text-gray-500 mt-2 space-x-4">
-            {project.start_date && <span>Start: {new Date(project.start_date).toLocaleDateString()}</span>}
-            {project.end_date && <span>End: {new Date(project.end_date).toLocaleDateString()}</span>}
-          </div>
-        )}
+        <Link to="/projects" className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
+          &larr; Back to Projects Workspace
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl mb-6 text-sm font-medium shadow-xs flex items-center justify-between">
+          <span>✨ {success}</span>
+          <button onClick={() => setSuccess('')} className="text-emerald-500 hover:text-emerald-800">&times;</button>
+        </div>
+      )}
+
+      {/* Main Project Hero Card */}
+      <div className="bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 sm:p-8 mb-8 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{project.name}</h1>
+              <span className="text-xs bg-slate-100 text-slate-700 font-mono font-bold px-3 py-1 rounded-lg border border-slate-200">
+                {project.key}
+              </span>
+            </div>
+            <p className="text-slate-600 text-sm max-w-2xl leading-relaxed mt-2">
+              {project.description || 'No description provided for this project.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to={`/issues/new?project=${project.id}`}
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold px-4 py-2.5 rounded-xl hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 transition text-sm flex items-center gap-1.5"
+            >
+              <span>+</span> New Ticket
+            </Link>
+            <Link
+              to={`/projects/${project.id}/edit`}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl border border-slate-200 transition text-sm"
+            >
+              Settings
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats strip */}
+        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-6 text-xs text-slate-500 font-medium">
+          <span className="flex items-center gap-1.5">
+            👥 <strong>{project.member_count || 0}</strong> team members
+          </span>
+          <span className="flex items-center gap-1.5">
+            🎯 <strong>{project.issue_count || 0}</strong> open issues
+          </span>
+          {project.start_date && (
+            <span className="flex items-center gap-1.5">
+              📅 Start: <strong>{new Date(project.start_date).toLocaleDateString()}</strong>
+            </span>
+          )}
+          {project.end_date && (
+            <span className="flex items-center gap-1.5">
+              🏁 End: <strong>{new Date(project.end_date).toLocaleDateString()}</strong>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Grid: Team Members & Add Member Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        
         {/* Members List */}
-        <div className="md:col-span-2 bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Team Members</h2>
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8">
+          <h2 className="text-lg font-extrabold text-slate-900 mb-6">Team Members</h2>
+          
           {memberError && (
-            <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm whitespace-pre-line">
-              {memberError}
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl mb-6 text-xs font-medium shadow-xs">
+              ⚠️ {memberError}
             </div>
           )}
-          <div className="space-y-2">
+
+          <div className="divide-y divide-slate-100">
             {project.members?.map((m) => (
-              <div key={m.id} className="flex items-center justify-between p-2 border rounded">
-                <div>
-                  <span className="font-medium">{m.username}</span>
-                  {m.full_name && <span className="text-sm text-gray-500 ml-2">({m.full_name})</span>}
+              <div key={m.id} className="py-3.5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                    {getInitials(m.full_name || m.username)}
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-slate-900">{m.username}</span>
+                    {m.full_name && <span className="text-xs text-slate-500 ml-2">({m.full_name})</span>}
+                    <span className="text-[11px] text-slate-400 block mt-0.5">
+                      Joined {new Date(m.joined_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-400">
-                    Joined {new Date(m.joined_at).toLocaleDateString()}
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-100">
+                    {m.role}
                   </span>
-                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">{m.role}</span>
                   {isOwnerOrAdmin && m.role !== 'owner' && (
                     <button
                       onClick={() => handleRemoveMember(m.user_id)}
-                      className="text-xs text-red-600 hover:text-red-800 hover:underline border-l pl-2 border-gray-300 ml-2"
+                      className="text-xs font-semibold text-rose-500 hover:text-rose-700 hover:underline"
                     >
                       Remove
                     </button>
@@ -152,34 +219,38 @@ export default function ProjectDetailPage() {
               </div>
             ))}
             {(!project.members || project.members.length === 0) && (
-              <p className="text-sm text-gray-500">No members registered in this project.</p>
+              <p className="text-xs text-slate-400 italic py-4">No team members assigned to this project yet.</p>
             )}
           </div>
         </div>
 
-        {/* Add Member panel for owners/admins */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Manage Team</h2>
+        {/* Add Member Widget */}
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8">
+          <h2 className="text-lg font-extrabold text-slate-900 mb-6">Manage Team</h2>
           {isOwnerOrAdmin ? (
             <form onSubmit={handleAddMember} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Add User by Username or Email</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Add User by Username or Email
+                </label>
                 <input
                   type="text"
-                  placeholder="Enter username or email address"
+                  placeholder="e.g. developer@issuedesk.com"
                   value={memberEmail}
                   onChange={(e) => setMemberEmail(e.target.value)}
                   required
-                  className="mt-1 w-full border rounded-md px-3 py-2 text-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Project Role</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Project Role
+                </label>
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
                   required
-                  className="mt-1 w-full border rounded-md px-3 py-2 text-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 >
                   <option value="admin">Admin (Manage settings & issues)</option>
                   <option value="member">Member (Create & edit issues)</option>
@@ -189,22 +260,28 @@ export default function ProjectDetailPage() {
               <button
                 type="submit"
                 disabled={addingMember}
-                className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 transition text-xs disabled:opacity-50"
               >
-                {addingMember ? 'Adding...' : 'Add Team Member'}
+                {addingMember ? 'Adding User...' : 'Add Team Member'}
               </button>
             </form>
           ) : (
-            <p className="text-sm text-gray-500">Only the project owner or administrators can add/remove members.</p>
+            <p className="text-xs text-slate-500 italic">Only project owners or administrators can invite or manage team members.</p>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Issues</h2>
-        <Link to={`/issues?project_id=${project.id}`}
-          className="text-indigo-600 hover:underline text-sm">
-          View all issues in this project &rarr;
+      {/* Quick Access Link */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-md flex items-center justify-between">
+        <div>
+          <h3 className="font-extrabold text-base">Project Issue Backlog</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Explore, filter, and triage tickets created inside {project.name}.</p>
+        </div>
+        <Link
+          to={`/issues?project_id=${project.id}`}
+          className="bg-white/10 hover:bg-white/20 text-white font-semibold px-4 py-2.5 rounded-xl text-xs backdrop-blur-md transition border border-white/10 shrink-0"
+        >
+          View All Tickets &rarr;
         </Link>
       </div>
     </Layout>

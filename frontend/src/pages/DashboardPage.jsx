@@ -13,6 +13,13 @@ const STATUS_LABELS = {
   reopened: 'Reopened',
 };
 
+const PRIORITY_BADGES = {
+  critical: 'bg-rose-100 text-rose-800 border-rose-200',
+  high: 'bg-amber-100 text-amber-800 border-amber-200',
+  medium: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  low: 'bg-slate-100 text-slate-700 border-slate-200',
+};
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [projects, setProjects] = useState([]);
@@ -41,60 +48,135 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Layout><div className="text-center py-8">Loading...</div></Layout>;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-medium">Loading workspace dashboard...</span>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       {success && (
-        <div className="bg-green-50 text-green-700 border border-green-200 p-3 rounded mb-6 text-sm">
-          {success}
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl mb-6 text-sm font-medium shadow-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>✨</span>
+            <span>{success}</span>
+          </div>
+          <button onClick={() => setSuccess('')} className="text-emerald-500 hover:text-emerald-800">&times;</button>
         </div>
       )}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome, {user?.full_name || user?.username}!
-        </h1>
-        <p className="text-gray-600 mt-1">Here's your IssueDesk overview.</p>
+
+      {/* Header Banner */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            Welcome back, <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">{user?.full_name || user?.username}</span>! 👋
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Here is what's happening across your active projects and issues today.
+          </p>
+        </div>
       </div>
 
+      {/* Top Stat Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Projects</h3>
-          <p className="text-3xl font-bold text-indigo-600 mt-2">{projects.length}</p>
+        {/* Stat Card 1 */}
+        <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500"></div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Projects</h3>
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition duration-200">
+              📁
+            </div>
+          </div>
+          <p className="text-4xl font-extrabold text-slate-900 mt-3">{projects.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Issues</h3>
-          <p className="text-3xl font-bold text-indigo-600 mt-2">{recentIssues.length}</p>
+
+        {/* Stat Card 2 */}
+        <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 to-purple-500"></div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Recent Tickets</h3>
+            <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition duration-200">
+              🎯
+            </div>
+          </div>
+          <p className="text-4xl font-extrabold text-slate-900 mt-3">{recentIssues.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-          <div className="mt-2 space-y-2">
-            <Link to="/projects/new" className="block text-indigo-600 hover:underline text-sm">
-              + New Project
+
+        {/* Stat Card 3 - Quick Actions */}
+        <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-300">Quick Actions</h3>
+            <p className="text-xs text-slate-400 mt-1">Create items or query the AI assistant.</p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              to="/issues/new"
+              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white backdrop-blur-md transition border border-white/10 flex items-center gap-1"
+            >
+              <span>+</span> New Issue
             </Link>
-            <Link to="/issues/new" className="block text-indigo-600 hover:underline text-sm">
-              + New Issue
+            <Link
+              to="/projects/new"
+              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white backdrop-blur-md transition border border-white/10 flex items-center gap-1"
+            >
+              <span>+</span> New Project
+            </Link>
+            <Link
+              to="/ai-chat"
+              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-sm transition flex items-center gap-1"
+            >
+              <span>✨</span> Ask AI
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold">Your Projects</h2>
+      {/* Bottom Content Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Projects Panel */}
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h2 className="text-base font-extrabold text-slate-900">Your Projects</h2>
+            <Link to="/projects" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+              View All &rarr;
+            </Link>
           </div>
           <div className="p-6">
             {projects.length === 0 ? (
-              <p className="text-gray-500 text-sm">No projects yet. Create your first project!</p>
+              <div className="text-center py-8 text-slate-400">
+                <p className="text-sm">No projects created yet.</p>
+                <Link to="/projects/new" className="inline-block mt-2 text-xs font-bold text-indigo-600 hover:underline">
+                  + Create your first project
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
                 {projects.slice(0, 5).map((p) => (
-                  <Link key={p.id} to={`/projects/${p.id}`}
-                    className="block p-3 border rounded hover:bg-gray-50">
-                    <span className="font-medium">{p.name}</span>
-                    <span className="ml-2 text-xs bg-gray-200 px-2 py-1 rounded">{p.key}</span>
-                    <span className="ml-2 text-sm text-gray-500">{p.issue_count} issues</span>
+                  <Link
+                    key={p.id}
+                    to={`/projects/${p.id}`}
+                    className="block p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/20 transition duration-150 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition">
+                          {p.name}
+                        </span>
+                        <span className="text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200">
+                          {p.key}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500 font-medium">
+                        {p.issue_count || 0} issues
+                      </span>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -102,29 +184,46 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold">Recent Issues</h2>
+        {/* Recent Issues Panel */}
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h2 className="text-base font-extrabold text-slate-900">Recent Issues</h2>
+            <Link to="/issues" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+              View All &rarr;
+            </Link>
           </div>
           <div className="p-6">
             {recentIssues.length === 0 ? (
-              <p className="text-gray-500 text-sm">No issues yet.</p>
+              <div className="text-center py-8 text-slate-400">
+                <p className="text-sm">No issues found.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {recentIssues.map((issue) => (
-                  <Link key={issue.id} to={`/issues/${issue.id}`}
-                    className="block p-3 border rounded hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm truncate">{issue.title}</span>
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${
-                        issue.status === 'open' ? 'bg-green-100 text-green-700' :
-                        issue.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>{STATUS_LABELS[issue.status] || issue.status}</span>
+                  <Link
+                    key={issue.id}
+                    to={`/issues/${issue.id}`}
+                    className="block p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/20 transition duration-150 group"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="font-semibold text-slate-800 text-sm truncate group-hover:text-indigo-600 transition">
+                        {issue.title}
+                      </span>
+                      <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
+                        issue.status === 'open' ? 'bg-emerald-100 text-emerald-800' :
+                        issue.status === 'in_progress' ? 'bg-sky-100 text-sky-800' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {STATUS_LABELS[issue.status] || issue.status}
+                      </span>
                     </div>
-                    <div className="flex mt-1 text-xs text-gray-500">
-                      <span className="mr-3 capitalize">{issue.priority}</span>
-                      {issue.project_key && <span>{issue.project_key}-{issue.id}</span>}
+                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                      <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider ${PRIORITY_BADGES[issue.priority] || ''}`}>
+                        {issue.priority}
+                      </span>
+                      {issue.issue_code && (
+                        <span className="font-mono text-slate-400">{issue.issue_code}</span>
+                      )}
                     </div>
                   </Link>
                 ))}

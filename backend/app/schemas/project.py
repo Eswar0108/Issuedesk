@@ -63,6 +63,13 @@ class ProjectCreate(ProjectBase):
         description="Optional end date for the project timeline"
     )
 
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
 
 # ── Update Project (PUT/PATCH /projects/{id}) ───────────────
 class ProjectUpdate(BaseModel):
@@ -91,6 +98,13 @@ class ProjectUpdate(BaseModel):
         None,
         description="Optional end date for the project timeline"
     )
+
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
     
 
 

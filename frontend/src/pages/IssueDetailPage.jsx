@@ -17,10 +17,23 @@ const STATUS_LABELS = {
   reopened: 'Reopened',
 };
 
+const STATUS_COLORS = {
+  open: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  in_progress: 'bg-sky-100 text-sky-800 border-sky-200',
+  resolved: 'bg-purple-100 text-purple-800 border-purple-200',
+  closed: 'bg-slate-100 text-slate-700 border-slate-200',
+  reopened: 'bg-amber-100 text-amber-800 border-amber-200',
+};
+
 const formatToIST = (dateStr) => {
   if (!dateStr) return '';
   const utcStr = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`;
   return new Date(utcStr).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+};
+
+const getInitials = (name) => {
+  if (!name) return 'U';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 };
 
 export default function IssueDetailPage() {
@@ -139,7 +152,7 @@ export default function IssueDetailPage() {
     try {
       const updated = await issueService.update(id, { status: newStatus });
       setIssue(updated);
-      setSuccess(`Issue status updated to ${STATUS_LABELS[newStatus] || newStatus} successfully!`);
+      setSuccess(`Status updated to ${STATUS_LABELS[newStatus] || newStatus}!`);
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to update status'));
     }
@@ -151,7 +164,7 @@ export default function IssueDetailPage() {
     try {
       const updated = await issueService.update(id, { priority: newPriority });
       setIssue(updated);
-      setSuccess(`Priority updated to ${newPriority} successfully!`);
+      setSuccess(`Priority updated to ${newPriority}!`);
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to update priority'));
     }
@@ -163,7 +176,7 @@ export default function IssueDetailPage() {
     try {
       const updated = await issueService.update(id, { issue_type: newType });
       setIssue(updated);
-      setSuccess(`Issue type updated to ${newType} successfully!`);
+      setSuccess(`Issue type updated to ${newType}!`);
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to update issue type'));
     }
@@ -177,7 +190,6 @@ export default function IssueDetailPage() {
       const updated = await issueService.update(id, { assignee_id: val });
       setIssue(updated);
       setSuccess('Assignee updated successfully!');
-      // Clear recommendation after manual action
       setAiAssigneeRecommendation(null);
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to update assignee'));
@@ -199,260 +211,344 @@ export default function IssueDetailPage() {
     }
   };
 
-  if (loading) return <Layout><div className="text-center py-8">Loading...</div></Layout>;
-  if (!issue) return <Layout><div className="text-center py-8 text-red-600">Issue not found</div></Layout>;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-medium">Loading ticket details...</span>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!issue) {
+    return (
+      <Layout>
+        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-xs max-w-md mx-auto">
+          <h3 className="text-lg font-bold text-slate-800">Ticket Not Found</h3>
+          <Link to="/issues" className="mt-4 inline-block text-sm font-bold text-indigo-600 hover:underline">
+            &larr; Back to Issues
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
 
   const STATUS_ACTIONS = {
-    open: [{ label: 'Start Progress', status: 'in_progress', color: 'bg-blue-600' }],
+    open: [{ label: 'Start Progress', status: 'in_progress', color: 'bg-sky-600 hover:bg-sky-700' }],
     in_progress: [
-      { label: 'Resolve', status: 'resolved', color: 'bg-green-600' },
-      { label: 'Reopen', status: 'open', color: 'bg-yellow-600' },
+      { label: 'Resolve Ticket', status: 'resolved', color: 'bg-emerald-600 hover:bg-emerald-700' },
+      { label: 'Reopen', status: 'open', color: 'bg-amber-600 hover:bg-amber-700' },
     ],
     resolved: [
-      { label: 'Close', status: 'closed', color: 'bg-gray-600' },
-      { label: 'Reopen', status: 'reopened', color: 'bg-yellow-600' },
+      { label: 'Close Ticket', status: 'closed', color: 'bg-slate-700 hover:bg-slate-800' },
+      { label: 'Reopen', status: 'reopened', color: 'bg-amber-600 hover:bg-amber-700' },
     ],
-    closed: [{ label: 'Reopen', status: 'reopened', color: 'bg-yellow-600' }],
+    closed: [{ label: 'Reopen Ticket', status: 'reopened', color: 'bg-amber-600 hover:bg-amber-700' }],
     reopened: [
-      { label: 'Start Progress', status: 'in_progress', color: 'bg-blue-600' },
-      { label: 'Close', status: 'closed', color: 'bg-gray-600' },
+      { label: 'Start Progress', status: 'in_progress', color: 'bg-sky-600 hover:bg-sky-700' },
+      { label: 'Close Ticket', status: 'closed', color: 'bg-slate-700 hover:bg-slate-800' },
     ],
   };
 
   return (
     <Layout>
-      {success && (
-        <div className="bg-green-50 text-green-700 border border-green-200 p-3 rounded mb-6 text-sm">
-          {success}
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded mb-6 text-sm whitespace-pre-line">
-          {error}
-        </div>
-      )}
-      <div className="mb-4">
-        <Link to="/issues" className="text-indigo-600 hover:underline text-sm">&larr; Back to Issues</Link>
+      {/* Back link */}
+      <div className="mb-6">
+        <Link to="/issues" className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
+          &larr; Back to Issues Explorer
+        </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">{issue.title}</h1>
-            <span className="text-sm text-gray-500">
-              {issue.project_key && <span className="font-mono mr-2">{issue.project_key}-{issue.id}</span>}
-              Created {new Date(issue.created_at).toLocaleDateString()}
-            </span>
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl mb-6 text-sm font-medium shadow-xs flex items-center justify-between">
+          <span>✨ {success}</span>
+          <button onClick={() => setSuccess('')} className="text-emerald-500 hover:text-emerald-800">&times;</button>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl mb-6 text-sm font-medium shadow-xs whitespace-pre-line">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Main 2-Column Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left 2 Columns: Main Details & Activity */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Header Card */}
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  {issue.issue_code && (
+                    <span className="text-xs bg-slate-100 text-slate-700 font-mono font-bold px-2.5 py-1 rounded-md border border-slate-200">
+                      {issue.issue_code}
+                    </span>
+                  )}
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border ${STATUS_COLORS[issue.status] || 'bg-slate-100'}`}>
+                    {STATUS_LABELS[issue.status] || issue.status}
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+                  {issue.title}
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {STATUS_ACTIONS[issue.status]?.map((action) => (
+                  <button
+                    key={action.status}
+                    onClick={() => handleStatusChange(action.status)}
+                    className={`${action.color} text-white font-semibold px-3.5 py-2 rounded-xl text-xs shadow-xs transition`}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+                <Link
+                  to={`/edit-issue/${issue.id}`}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-xl text-xs border border-slate-200 transition"
+                >
+                  Edit
+                </Link>
+              </div>
+            </div>
+
+            {/* Description Body */}
+            <div className="mt-6 pt-6 border-t border-slate-100">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Description</h3>
+              {issue.description ? (
+                <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 sm:p-5 text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">
+                  {issue.description}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">No description provided for this issue.</p>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2">
-            {STATUS_ACTIONS[issue.status]?.map((action) => (
-              <button key={action.status} onClick={() => handleStatusChange(action.status)}
-                className={`${action.color} text-white px-3 py-1.5 rounded text-sm hover:opacity-90`}>
-                {action.label}
+
+          {/* Attachments Panel */}
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-extrabold text-slate-900">Attachments ({attachments.length})</h2>
+              <label
+                className={`cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold px-3.5 py-2 rounded-xl text-xs shadow-xs hover:from-indigo-700 hover:to-violet-700 transition ${
+                  uploadingFile ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                {uploadingFile ? 'Uploading...' : '+ Upload Attachment'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploadingFile}
+                />
+              </label>
+            </div>
+
+            {attachments.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">No files attached to this ticket.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {attachments.map((attachment) => (
+                  <div key={attachment.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-lg">📎</span>
+                      <div className="min-w-0">
+                        <a
+                          href={attachmentService.getDownloadUrl(attachment.file_path || `issue/${id}/${attachment.file_name}`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-indigo-600 hover:underline truncate block"
+                        >
+                          {attachment.file_name}
+                        </a>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          {attachmentService.formatFileSize(attachment.file_size)}
+                        </span>
+                      </div>
+                    </div>
+                    {attachment.uploader_username === user?.username && (
+                      <button
+                        onClick={() => handleDeleteAttachment(attachment.id, attachment.file_name)}
+                        className="text-rose-500 hover:text-rose-700 text-xs font-semibold shrink-0"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Comments Discussion Timeline */}
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8">
+            <h2 className="text-lg font-extrabold text-slate-900 mb-6">Discussion ({comments.length})</h2>
+
+            {/* Add Comment Box */}
+            <form onSubmit={handleAddComment} className="mb-8">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Type your discussion comment or update..."
+                rows={3}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all mb-3"
+              />
+              <button
+                type="submit"
+                disabled={!newComment.trim()}
+                className="bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-xl text-xs hover:bg-indigo-700 disabled:opacity-40 shadow-xs transition"
+              >
+                Post Comment
               </button>
-            ))}
-          <Link to={`/edit-issue/${issue.id}`} className="text-indigo-600 hover:underline text-sm">Edit</Link>
+            </form>
+
+            {/* Timeline Thread */}
+            <div className="space-y-4">
+              {comments.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No discussion comments yet. Start the conversation!</p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="p-4 bg-slate-50/60 rounded-2xl border border-slate-100 flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                      {getInitials(comment.author_username)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-xs text-slate-900">{comment.author_username}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold text-slate-400">{formatToIST(comment.created_at)}</span>
+                          {comment.user_id === user?.id && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-[10px] font-bold text-rose-500 hover:underline"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 mb-4 text-sm">
-          <span className={`px-2 py-1 rounded font-medium ${
-            issue.status === 'open' ? 'bg-green-100 text-green-700' :
-            issue.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-            issue.status === 'resolved' ? 'bg-purple-100 text-purple-700' :
-            'bg-gray-100 text-gray-700'
-          }`}>{STATUS_LABELS[issue.status] || issue.status}</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-500">Issue Code:</span>
-            <span className="font-mono text-gray-700">{issue.issue_code}</span>
-          </div>
+        {/* Right 1 Column: Metadata Side Panel */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 space-y-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 pb-3 border-b border-slate-100">
+              Ticket Attributes
+            </h3>
 
-          {issue.start_date && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-500">Start Date:</span>
-              <span className="text-gray-700 font-medium">{new Date(issue.start_date).toLocaleDateString()}</span>
+            {/* Priority Select */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Priority</label>
+              <select
+                value={issue.priority}
+                onChange={(e) => handlePriorityChange(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider cursor-pointer"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
             </div>
-          )}
-          
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-500">Priority:</span>
-            <select
-              value={issue.priority}
-              onChange={(e) => handlePriorityChange(e.target.value)}
-              className="px-2 py-1 bg-gray-100 rounded border border-gray-200 text-xs font-semibold uppercase tracking-wider text-gray-700 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
-          </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-500">Type:</span>
-            <select
-              value={issue.issue_type}
-              onChange={(e) => handleTypeChange(e.target.value)}
-              className="px-2 py-1 bg-gray-100 rounded border border-gray-200 text-xs font-semibold uppercase tracking-wider text-gray-700 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            >
-              <option value="bug">Bug</option>
-              <option value="feature">Feature</option>
-              <option value="task">Task</option>
-              <option value="improvement">Improvement</option>
-            </select>
-          </div>
+            {/* Type Select */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Issue Type</label>
+              <select
+                value={issue.issue_type}
+                onChange={(e) => handleTypeChange(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider cursor-pointer"
+              >
+                <option value="bug">Bug</option>
+                <option value="feature">Feature</option>
+                <option value="task">Task</option>
+                <option value="improvement">Improvement</option>
+              </select>
+            </div>
 
-          {issue.reporter_username && <span>Reported by: <strong>{issue.reporter_username}</strong></span>}
-          
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-500">Assignee:</span>
+            {/* Assignee Selector & AI Widget */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-500">Assignee</label>
+                <button
+                  type="button"
+                  onClick={handleSuggestAssignee}
+                  disabled={aiAssigneeLoading}
+                  className="text-[10px] text-indigo-600 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md hover:bg-indigo-100/60 transition disabled:opacity-50"
+                >
+                  {aiAssigneeLoading ? '✨ Recommending...' : '✨ AI Suggest'}
+                </button>
+              </div>
+
               <select
                 value={issue.assignee_id || ''}
                 onChange={(e) => handleAssigneeChange(e.target.value)}
-                className="px-2 py-1 bg-gray-100 rounded border border-gray-200 text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="">Unassigned</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>{u.username}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={handleSuggestAssignee}
-                disabled={aiAssigneeLoading}
-                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 border border-indigo-100 px-2 py-1 rounded transition hover:bg-indigo-100/50 disabled:opacity-50 flex items-center gap-0.5"
-              >
-                {aiAssigneeLoading ? '✨ Suggesting...' : '✨ AI Suggest'}
-              </button>
-            </div>
-            
-            {aiAssigneeRecommendation && (
-              <div className="mt-2 bg-indigo-50/70 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-950 flex flex-col gap-1.5 shadow-sm max-w-xs">
-                <div>
-                  <span className="font-bold text-indigo-700">AI Suggests:</span>{' '}
-                  <span className="font-semibold">{aiAssigneeRecommendation.suggested_username || 'Unassigned'}</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-indigo-900 font-medium italic">
-                  "{aiAssigneeRecommendation.reasoning}"
-                </p>
-                {aiAssigneeRecommendation.suggested_user_id && aiAssigneeRecommendation.suggested_user_id !== issue.assignee_id && (
-                  <button
-                    type="button"
-                    onClick={() => handleAssigneeChange(aiAssigneeRecommendation.suggested_user_id)}
-                    className="self-start text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-2 py-1 rounded shadow-sm transition"
-                  >
-                    Accept Suggestion
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
 
-        {issue.description && (
-          <div className="mt-4 p-4 bg-gray-50 rounded">
-            <p className="text-gray-700 whitespace-pre-wrap">{issue.description}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Attachments ({attachments.length})</h2>
-          <label
-            id="upload-attachment-btn"
-            className={`cursor-pointer bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700 ${
-              uploadingFile ? 'opacity-50 pointer-events-none' : ''
-            }`}
-          >
-            {uploadingFile ? 'Uploading...' : '+ Upload File'}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileUpload}
-              disabled={uploadingFile}
-            />
-          </label>
-        </div>
-
-        {attachments.length === 0 ? (
-          <p className="text-gray-500 text-sm">No attachments yet.</p>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {attachments.map((attachment) => (
-              <li key={attachment.id} className="flex items-center justify-between py-2 text-sm">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-gray-400 text-lg">📎</span>
-                  <div className="min-w-0">
-                    <a
-                      href={attachmentService.getDownloadUrl(attachment.file_path || `issue/${id}/${attachment.file_name}`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline font-medium truncate block"
-                      title={attachment.file_name}
+              {/* AI Recommendation Box */}
+              {aiAssigneeRecommendation && (
+                <div className="mt-3 bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-xl p-3.5 text-xs text-indigo-950 shadow-xs animate-fadeIn">
+                  <div className="font-bold text-indigo-700 text-[11px] mb-1">AI Recommendation:</div>
+                  <div className="font-extrabold text-slate-900 text-sm">
+                    {aiAssigneeRecommendation.suggested_username || 'Unassigned'}
+                  </div>
+                  <p className="text-[11px] text-indigo-900 font-medium italic mt-1 leading-relaxed">
+                    "{aiAssigneeRecommendation.reasoning}"
+                  </p>
+                  {aiAssigneeRecommendation.suggested_user_id && aiAssigneeRecommendation.suggested_user_id !== issue.assignee_id && (
+                    <button
+                      type="button"
+                      onClick={() => handleAssigneeChange(aiAssigneeRecommendation.suggested_user_id)}
+                      className="mt-2.5 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-1.5 rounded-lg shadow-xs transition"
                     >
-                      {attachment.file_name}
-                    </a>
-                    <span className="text-gray-400 text-xs">
-                      {attachmentService.formatFileSize(attachment.file_size)}
-                      {attachment.uploader_username && ` · by ${attachment.uploader_username}`}
-                      {` · ${new Date(attachment.created_at + 'Z').toLocaleDateString()}`}
-                    </span>
-                  </div>
+                      Assign to {aiAssigneeRecommendation.suggested_username}
+                    </button>
+                  )}
                 </div>
-                {attachment.uploader_username === user?.username && (
-                  <button
-                    id={`delete-attachment-${attachment.id}`}
-                    onClick={() => handleDeleteAttachment(attachment.id, attachment.file_name)}
-                    className="ml-4 text-xs text-red-600 hover:underline shrink-0"
-                  >
-                    Delete
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+              )}
+            </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Comments ({comments.length})</h2>
-
-        <form onSubmit={handleAddComment} className="mb-6">
-          <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..." rows={3}
-            className="w-full border rounded-md px-3 py-2 mb-2" />
-          <button type="submit" disabled={!newComment.trim()}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50">
-            Add Comment
-          </button>
-        </form>
-
-        <div className="space-y-4">
-          {comments.length === 0 ? (
-            <p className="text-gray-500 text-sm">No comments yet.</p>
-          ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-sm">{comment.author_username}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">
-                      {formatToIST(comment.created_at)}
-                    </span>
-                    {comment.user_id === user?.id && (
-                      <button onClick={() => handleDeleteComment(comment.id)}
-                        className="text-xs text-red-600 hover:underline">Delete</button>
-                    )}
-                  </div>
-                </div>
-                <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.content}</p>
+            {/* Reporter & Timestamps */}
+            <div className="pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-600 font-medium">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Reporter:</span>
+                <strong className="text-slate-800">{issue.reporter_username || 'Unknown'}</strong>
               </div>
-            ))
-          )}
+              {issue.start_date && (
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Start Date:</span>
+                  <span className="text-slate-800">{new Date(issue.start_date).toLocaleDateString()}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Created:</span>
+                <span className="text-slate-800">{new Date(issue.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+          </div>
         </div>
+
       </div>
     </Layout>
   );

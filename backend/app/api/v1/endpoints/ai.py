@@ -133,7 +133,7 @@ def ai_chat(
     RAG-powered chat with issues and comments of a project.
     """
     # 1. Verify membership
-    verify_project_membership(db, payload.project_id, current_user.id)
+    project = verify_project_membership(db, payload.project_id, current_user.id)
 
     # 2. Retrieve all project issues and comments to construct RAG context
     issues = (
@@ -143,11 +143,24 @@ def ai_chat(
     )
 
     if not issues:
-        context = "No issues have been created in this project yet."
+        context = f"No issues have been created in project '{project.name}' ({project.key}) yet."
     else:
-        # Build context
+        # Compute exact counts and statistical breakdown
+        total_issues = len(issues)
+        by_priority = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        by_status = {"open": 0, "in_progress": 0, "resolved": 0, "closed": 0, "reopened": 0}
+        by_type = {"bug": 0, "feature": 0, "task": 0, "improvement": 0}
+
         context_parts = []
         for issue in issues:
+            p_val = issue.priority.value if hasattr(issue.priority, "value") else str(issue.priority).lower()
+            s_val = issue.status.value if hasattr(issue.status, "value") else str(issue.status).lower()
+            t_val = issue.issue_type.value if hasattr(issue.issue_type, "value") else str(issue.issue_type).lower()
+
+            if p_val in by_priority: by_priority[p_val] += 1
+            if s_val in by_status: by_status[s_val] += 1
+            if t_val in by_type: by_type[t_val] += 1
+
             comments_str = ""
             if issue.comments:
                 comments_str = "\n  Comments:\n" + "\n".join(
@@ -156,16 +169,26 @@ def ai_chat(
             context_parts.append(
                 f"Issue Code: {issue.issue_code}\n"
                 f"  Title: {issue.title}\n"
-                f"  Status: {issue.status.value if hasattr(issue.status, 'value') else issue.status}\n"
-                f"  Priority: {issue.priority.value if hasattr(issue.priority, 'value') else issue.priority}\n"
-                f"  Type: {issue.issue_type.value if hasattr(issue.issue_type, 'value') else issue.issue_type}\n"
+                f"  Status: {s_val}\n"
+                f"  Priority: {p_val}\n"
+                f"  Type: {t_val}\n"
                 f"  Assignee: {issue.assignee.username if issue.assignee else 'Unassigned'}\n"
                 f"  Reporter: {issue.reporter.username if issue.reporter else 'Unknown'}\n"
                 f"  Description: {issue.description or 'No description provided.'}\n"
                 f"  Start Date: {issue.start_date.strftime('%Y-%m-%d') if issue.start_date else 'None'}"
                 f"{comments_str}"
             )
-        context = "\n---\n".join(context_parts)
+
+        summary_header = (
+            f"=== COMPLETE PROJECT STATISTICAL OVERVIEW FOR '{project.name}' (Key: {project.key}) ===\n"
+            f"Total Issues in Database: {total_issues}\n"
+            f"Breakdown by Priority: Critical={by_priority['critical']}, High={by_priority['high']}, Medium={by_priority['medium']}, Low={by_priority['low']}\n"
+            f"Breakdown by Status: Open={by_status['open']}, In Progress={by_status['in_progress']}, Resolved={by_status['resolved']}, Closed={by_status['closed']}, Reopened={by_status['reopened']}\n"
+            f"Breakdown by Type: Bug={by_type['bug']}, Feature={by_type['feature']}, Task={by_type['task']}, Improvement={by_type['improvement']}\n"
+            f"===============================================================================\n\n"
+            f"=== DETAILED ISSUE LIST AND COMMENTS ===\n"
+        )
+        context = summary_header + "\n---\n".join(context_parts)
 
     # 3. Call AI Provider
     response_text = get_llm_provider().generate_chat_response(

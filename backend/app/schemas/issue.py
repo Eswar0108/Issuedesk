@@ -8,7 +8,7 @@ Issues are the core entity - bugs, features, tasks tracked in projects.
 from datetime import datetime, date
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import IssueStatus, IssuePriority, IssueType
 
@@ -51,6 +51,13 @@ class IssueBase(BaseModel):
         None,
         description="Start Date of the issue"
     )
+
+    @field_validator("start_date", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
 
 # ── Create Issue (POST /issues/) ────────────────────────────
@@ -122,6 +129,13 @@ class IssueUpdate(BaseModel):
         None,
         description="New start date of the issue"
     )
+
+    @field_validator("start_date", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
 
 # ── Issue Status Transition ─────────────────────────────────
