@@ -1,121 +1,118 @@
-# IssueHub — A Lightweight Bug Tracker
+# ⚡ IssueDesk — AI-Powered Issue Tracker & Workspace
 
-IssueHub is a minimal, production-grade bug tracker designed for teams to organize projects, file issues, comment on them, and track their workflows. It is built with a decoupled FastAPI (Python) backend and a modern React (Vite) frontend.
-
----
-
-## 🛠️ Tech Stack & Trade-offs
-
-### Backend (FastAPI + SQLAlchemy)
-- **FastAPI**: Chosen for its high performance, automatic Swagger/OpenAPI documentation generation, and type validation using Pydantic.
-- **SQLAlchemy (ORM)**: Provides robust mapping of python objects to relational tables. Kept model structures modular.
-- **PostgreSQL**: Used as the primary relational database to handle complex joining logic securely (SQLite in-memory is used for the test suite to keep tests isolated and fast).
-- **Password Hashing**: `passlib` with `bcrypt` to secure user credentials.
-- **Session / Security**: JWT Bearer token authentication stored locally and sent via headers.
-
-### Frontend (React + Vite)
-- **React (Vite)**: Quick hot-reloading dev server with minimal build output.
-- **Axios**: Standard HTTP request client configured with request interceptors to inject auth headers automatically.
-- **CSS (Tailwind style)**: Fully responsive layouts with premium micro-interactions.
+**IssueDesk** is a production-grade, full-stack issue tracking system built for engineering teams to organize projects, triage tickets, manage workloads, and leverage an intelligent **RAG AI Assistant** directly on top of project data. It features a decoupled **FastAPI (Python)** backend and a glassmorphic **React (Vite + Tailwind CSS v4)** frontend.
 
 ---
 
-## ⚙️ Project Setup
+## ✨ AI Features & Capabilities
 
-### Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a Python virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Create a `.env` file from the example:
-   ```bash
-   cp .env.example .env
-   ```
-   *Modify the `DATABASE_URL` in `.env` to point to your PostgreSQL instance:*
-   ```env
-   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
-   ```
+IssueDesk features a flexible **Provider-Adapter LLM architecture** supporting multiple AI engines (**Groq**, **Google Gemini**, **OpenAI**, and offline local **Ollama**).
 
-### Database Migrations (Alembic)
+* 🔮 **RAG-Powered AI Assistant (`IssueDesk AI`)**: Conversational project assistant that analyzes all project tickets, status metrics, and team comment threads to answer natural language queries. Includes pre-computed statistical headers for accurate counting of priority bugs and task timelines.
+* 🔍 **AI Semantic Search**: Vector-based semantic search across project issues using vector embeddings, with automatic text-matching fallback for non-embedding LLM providers.
+* ✍️ **AI Auto-Enhance Ticket Descriptions**: Transforms draft bug reports into professionally structured Markdown descriptions complete with Summary, Steps to Reproduce, Expected vs Actual Behavior, and recommended Priority/Type tags.
+* 🤖 **Smart Assignee Recommendations**: Analyzes new ticket content against team members' real-time active workloads and project roles to suggest the optimal developer assignment.
 
-This project uses Alembic for database schema management instead of `Base.metadata.create_all()`.
+---
 
-After setting up your database, run the initial migration:
+## 🛠️ Tech Stack & Architecture
+
+### Backend (FastAPI + SQLAlchemy + Alembic)
+* **FastAPI**: High-performance Python web framework providing automatic OpenAPI/Swagger documentation, asynchronous execution, and strict Pydantic v2 data validation.
+* **SQLAlchemy (ORM) & PostgreSQL**: Production-grade relational mapping with Alembic schema migration tracking.
+* **LLM Abstraction Layer**: Pluggable provider system (`BaseLLMProvider`) supporting `GroqProvider`, `GeminiProvider`, `OpenAIProvider`, and `OllamaProvider`.
+* **Security & Auth**: OAuth2 password flow with JWT Bearer tokens and passlib bcrypt password hashing.
+
+### Frontend (React + Vite + Tailwind CSS v4)
+* **React 18 & Vite**: Fast developer hot-reloading with production build optimization.
+* **Design System & Aesthetics**: Styled with Tailwind CSS v4, custom glassmorphism utilities (`.glass-card`), dynamic gradient meshes, and Google Fonts (`Outfit` for headings & `Inter` for body UI).
+* **Axios HTTP Client**: Centralized API request routing with automated bearer token injection and standard error handling.
+
+---
+
+## ⚙️ Environment Variables & Configuration
+
+Create a `.env` file in the `backend` directory based on `.env.example`:
+
+```env
+# Database Configuration
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/issuedesk
+
+# Security & JWT
+SECRET_KEY=your_super_secret_jwt_key_here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+# AI Provider Configuration
+# Options: groq, gemini, openai, ollama
+LLM_PROVIDER=groq
+AI_NAME=IssueDesk AI
+
+# Groq API Configuration (Recommended Free Production Tier)
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
+
+# Optional Alternative Providers
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+OLLAMA_BASE_URL=http://localhost:11434
+
+# CORS Configuration (Comma-separated origins for deployment)
+CORS_ORIGINS=https://issuedesk-six.vercel.app,http://localhost:5173
+```
+
+---
+
+## 🚀 Getting Started Locally
+
+### 1. Backend Setup (Python 3.10+)
 
 ```bash
 cd backend
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run database migrations
 PYTHONPATH=. alembic upgrade head
-```
 
-To generate a new migration after modifying models:
+# Start the dev server
+uvicorn main:app --reload --port 8008
+```
+* Interactive API Documentation: http://localhost:8008/docs
+* ReDoc UI: http://localhost:8008/redoc
+
+### 2. Frontend Setup (Node.js 18+)
 
 ```bash
-PYTHONPATH=. alembic revision --autogenerate -m "description_of_change"
-PYTHONPATH=. alembic upgrade head
-```
+cd frontend
 
-To rollback the last migration:
+# Install dependencies
+npm install
 
-```bash
-PYTHONPATH=. alembic downgrade -1
-```
-
-> **Note**: The test suite uses an in-memory SQLite database and creates/drops tables automatically, so it does not require Alembic.
-
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install npm packages:
-   ```bash
-   npm install
-   ```
-
----
-
-## 🚀 Running the Application
-
-### 1. Start the Backend Server
-From the `backend` directory with the virtual environment activated:
-```bash
-python main.py
-# Or: uvicorn main:app --reload --port 8000
-```
-- API Docs will be available at: http://localhost:8000/docs
-- ReDoc at: http://localhost:8000/redoc
-
-### 2. Start the Frontend Server
-From the `frontend` directory:
-```bash
+# Start Vite dev server
 npm run dev
 ```
-Open http://localhost:5173 (or the port Vite prints in your console) to access the app.
+* Web Application UI: http://localhost:5173
 
 ---
 
 ## 🧪 Running Tests
 
-A comprehensive pytest suite covering authentication, projects list, email-based user invitations, issues, and comments is configured to run on an in-memory SQLite database for speed and isolation.
+The test suite covers authentication, project workspaces, issue lifecycles, and AI endpoints on an isolated in-memory SQLite database.
 
-From the `backend` directory with your virtual environment activated:
 ```bash
+cd backend
 PYTHONPATH=. pytest
 ```
 
 ---
 
-## 🔒 Security & Input Validation
-- **Authentication**: JWT token validation protects all API routes.
-- **Data Validation**: Inputs are strictly validated on both the Pydantic/FastAPI level and the frontend forms.
-- **Clean Validation Errors**: FastAPI validation errors (422) are intercepted by the frontend and formatted into clear, human-readable instructions instead of showing raw regex parameters.
-- **Redundant database constraints handled**: Made sure that the owner/reporter relationships are checked on the DB level.
+## 🐳 Production Deployment
+
+* **Backend (Docker & Railway)**: Containerized via [backend/Dockerfile](file:///Users/tejeswarreddy/Downloads/python/Issuedesk/backend/Dockerfile) with automated startup database migration (`alembic upgrade head`). Deployed on Railway connected to PostgreSQL.
+* **Frontend (Vercel SPA)**: Configured with SPA rewrite rules in [frontend/vercel.json](file:///Users/tejeswarreddy/Downloads/python/Issuedesk/frontend/vercel.json) to route all paths cleanly to `index.html`.
